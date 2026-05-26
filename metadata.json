@@ -1,0 +1,6 @@
+{
+  "name": "TrustEvo2D",
+  "description": "二維空間信任度與認知演化模擬器 (2D Spatial Trust and Cognitive Evolution Simulator)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

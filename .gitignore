@@ -1,45 +1,15 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+node_modules/
+build/
+dist/
+coverage/
 .DS_Store
-*.pem
+*.log
+.env*
+!.env.example
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
-.env
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# 臨時開發目錄（不上傳至 Git）
+# 臨時與大型資產排除
 TMP/
 temp/
-
-# 大型多媒體與學術資產
 *.pdf
 *.mp4
 *.mp3
