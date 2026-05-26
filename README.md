@@ -1,20 +1,9 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# sim-trust-evolution
 
-# Run and deploy your AI Studio app
+**信任演化模擬實驗** — 以重複囚徒困境（Iterated Prisoner's Dilemma）為框架，模擬多智能體社群中信任的動態演化。
 
-This contains everything you need to run your app locally.
+🔗 **Live Demo**: [https://toydogcat.github.io/sim-trust-evolution/](https://toydogcat.github.io/sim-trust-evolution/)
 
-View your app in AI Studio: https://ai.studio/apps/5ea4fac5-a56e-4be5-8a6e-b0f44341951d
+## 授權
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+MIT License
