@@ -463,12 +463,12 @@ export class SimulationEngine {
     const pB = this.getBid(expectationA, b.behaviorStyle);
 
     // Payoff formulas:
-    // delta_W_a = multiplier * [ P_b * (2 - P_a) - P_a ]
-    // delta_W_b = multiplier * [ P_a * (2 - P_b) - P_b ]
+    // delta_W_a = multiplier * [ 3 * P_b - P_a ]
+    // delta_W_b = multiplier * [ 3 * P_a - P_b ]
     const baseMultiplier = this.params.payoffMultiplier ?? 10;
     const finalMultiplier = baseMultiplier * (this.params.isScarcityMode ? 0.5 : 1.0);
-    const deltaWA = finalMultiplier * (pB * (2 - pA) - pA);
-    const deltaWB = finalMultiplier * (pA * (2 - pB) - pB);
+    const deltaWA = finalMultiplier * (3 * pB - pA);
+    const deltaWB = finalMultiplier * (3 * pA - pB);
 
     // Apply wealth changes
     a.wealth += deltaWA;
