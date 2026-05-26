@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO -->
+  <title>信任演化模擬實驗 — Trust Evolution Simulation</title>
+  <meta name="description" content="以重複囚徒困境（Iterated Prisoner's Dilemma）為框架，模擬多智能體社群中信任的動態演化過程。可互動調整參數，即時觀察信任網路的變化。" />
+  <meta name="keywords" content="信任演化, 囚徒困境, 多智能體, 博弈論, 模擬實驗, trust evolution, prisoner's dilemma" />
+  <meta property="og:title"       content="信任演化模擬實驗" />
+  <meta property="og:description" content="重複囚徒困境框架下的信任動態模擬" />
+  <meta property="og:url"         content="https://toydogcat.github.io/sim-trust-evolution/" />
+
+  <!-- Vercount 瀏覽計次器 -->
+  <script async src="https://www.vercount.one/js" crossorigin="anonymous"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- 樣式 -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Agent Tooltip -->
+<div class="tooltip" id="agent-tooltip"></div>
+
+<div class="page-wrapper">
+
+  <!-- ── Header ───────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="badge">
+      <span class="dot"></span>
+      互動式模擬實驗
+    </div>
+    <h1>信任演化模擬</h1>
+    <p class="subtitle">
+      以重複囚徒困境（Iterated Prisoner's Dilemma）為框架，<br>
+      觀察多智能體社群中信任如何隨博弈回合動態演化。
+    </p>
+  </header>
+
+  <!-- ── Stats Bar ─────────────────────────────────────────── -->
+  <div class="glass-card stats-bar" style="margin-bottom:20px;">
+    <div class="stat-item">
+      <span class="stat-value" id="stat-round">0</span>
+      <span class="stat-label">回合</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="stat-trust">—</span>
+      <span class="stat-label">平均信任度</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="stat-coop">—</span>
+      <span class="stat-label">合作率</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="stat-agents">—</span>
+      <span class="stat-label">智能體數</span>
+    </div>
+  </div>
+
+  <!-- ── Main Grid ─────────────────────────────────────────── -->
+  <div class="main-grid">
+
+    <!-- ── 控制面板 ────────────────────────────────────────── -->
+    <aside class="glass-card control-panel">
+
+      <!-- 模擬狀態 -->
+      <div>
+        <p class="panel-title">模擬狀態</p>
+        <div style="margin-bottom:12px;">
+          <span class="round-badge">
+            <span class="running-indicator" id="run-indicator"></span>
+            第 <span id="round-num">0</span> 回合
+          </span>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btn-init"  onclick="handleInit()">⚙️ 初始化</button>
+          <button class="btn btn-primary" id="btn-start" onclick="handleStart()" disabled>▶ 開始</button>
+          <button class="btn btn-secondary" id="btn-step" onclick="handleStep()" disabled>⏭ 單步</button>
+          <button class="btn btn-danger"   id="btn-reset" onclick="handleReset()">↺ 重置</button>
+        </div>
+      </div>
+
+      <!-- 速度控制 -->
+      <div>
+        <p class="panel-title">模擬速度</p>
+        <div class="param-row">
+          <div class="speed-row">
+            <label for="speed-range">慢</label>
+            <input type="range" id="speed-range" min="50" max="1000" step="50" value="300"
+                   oninput="handleSpeedChange(this.value)">
+            <label>快</label>
+          </div>
+          <div style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:4px;">
+            每回合 <span id="speed-label" style="color:var(--accent-cyan);">300</span> ms
+          </div>
+        </div>
+      </div>
+
+      <!-- 網路參數 -->
+      <div>
+        <p class="panel-title">網路設定</p>
+        <div class="param-group">
+
+          <div class="param-row">
+            <div class="param-label">
+              <span>智能體數量</span>
+              <span class="val" id="val-agents">40</span>
+            </div>
+            <input type="range" id="sl-agents" min="10" max="80" step="5" value="40"
+                   oninput="updateLabel('val-agents', this.value)">
+          </div>
+
+          <div class="param-row">
+            <div class="param-label">
+              <span>連接密度</span>
+              <span class="val" id="val-conn">15%</span>
+            </div>
+            <input type="range" id="sl-conn" min="5" max="40" step="1" value="15"
+                   oninput="updateLabel('val-conn', this.value+'%')">
+          </div>
+
+          <div class="param-row">
+            <div class="param-label"><span>網路拓撲</span></div>
+            <select id="sel-topology">
+              <option value="random">隨機圖（Erdős–Rényi）</option>
+              <option value="small-world">小世界（Watts-Strogatz）</option>
+            </select>
+          </div>
+
+          <div class="param-row">
+            <div class="param-label"><span>初始信任分佈</span></div>
+            <select id="sel-dist">
+              <option value="uniform">均勻隨機</option>
+              <option value="high">偏高信任</option>
+              <option value="low">偏低信任</option>
+              <option value="mixed">極化分佈</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 博弈參數 -->
+      <div>
+        <p class="panel-title">博弈參數</p>
+        <div class="param-group">
+
+          <div class="param-row">
+            <div class="param-label">
+              <span>背叛誘惑值 T</span>
+              <span class="val" id="val-tempt">5.0</span>
+            </div>
+            <input type="range" id="sl-tempt" min="3.1" max="7" step="0.1" value="5"
+                   oninput="updateLabel('val-tempt', parseFloat(this.value).toFixed(1))">
+          </div>
+
+          <div class="param-row">
+            <div class="param-label">
+              <span>寬容係數</span>
+              <span class="val" id="val-leniency">0.6</span>
+            </div>
+            <input type="range" id="sl-leniency" min="0.1" max="1.0" step="0.05" value="0.6"
+                   oninput="updateLabel('val-leniency', parseFloat(this.value).toFixed(2))">
+          </div>
+
+          <div class="param-row">
+            <div class="param-label">
+              <span>決策雜訊</span>
+              <span class="val" id="val-noise">0.20</span>
+            </div>
+            <input type="range" id="sl-noise" min="0" max="0.5" step="0.01" value="0.2"
+                   oninput="updateLabel('val-noise', parseFloat(this.value).toFixed(2))">
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── 右側：網路圖 ───────────────────────────────────── -->
+    <div class="glass-card canvas-section">
+      <div class="canvas-header">
+        <span class="canvas-title">🕸️ 信任網路圖</span>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f43f5e;"></div>
+            <span>低信任</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f59e0b;"></div>
+            <span>中等</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#22d3ee;"></div>
+            <span>高信任</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="network-canvas" style="height:420px;"></canvas>
+    </div>
+
+    <!-- ── 右側：折線圖 ──────────────────────────────────── -->
+    <div class="glass-card chart-section">
+      <div class="canvas-header" style="margin-bottom:12px;">
+        <span class="canvas-title">📈 信任度 &amp; 合作率趨勢</span>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="trust-chart"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /main-grid -->
+
+  <!-- ── 說明卡片 ──────────────────────────────────────────── -->
+  <div class="info-grid">
+
+    <div class="glass-card info-card">
+      <h3><span class="icon">🎮</span>模型說明</h3>
+      <p>
+        本實驗採用<strong style="color:var(--accent-cyan);">重複囚徒困境（IPD）</strong>框架。
+        每回合，相鄰智能體兩兩博弈，根據當前信任值決定合作或背叛，
+        博弈結果再反饋更新彼此的信任值，形成動態演化循環。
+      </p>
+    </div>
+
+    <div class="glass-card info-card">
+      <h3><span class="icon">💰</span>收益矩陣</h3>
+      <div class="payoff-matrix">
+        <div class="pm-cell header"></div>
+        <div class="pm-cell header">合作</div>
+        <div class="pm-cell header">背叛</div>
+        <div class="pm-cell header">合作</div>
+        <div class="pm-cell coop"  id="pm-rr">R,R = 3,3</div>
+        <div class="pm-cell defect" id="pm-st">S,T = 0,T</div>
+        <div class="pm-cell header">背叛</div>
+        <div class="pm-cell defect" id="pm-ts">T,S = T,0</div>
+        <div class="pm-cell" style="color:var(--text-muted);" id="pm-pp">P,P = 1,1</div>
+      </div>
+      <p style="margin-top:10px; font-size:12px; color:var(--text-muted);">
+        T（誘惑值）可由左側滑桿調整
+      </p>
+    </div>
+
+    <div class="glass-card info-card">
+      <h3><span class="icon">🔄</span>信任更新規則</h3>
+      <p>
+        博弈後，收益越高 → 信任提升；收益越低 → 信任下降。
+        <strong style="color:var(--accent-purple);">寬容係數</strong>控制更新幅度：
+        值越高，信任對博弈結果越敏感；
+        <strong style="color:var(--accent-amber);">決策雜訊</strong>模擬現實中的不確定性。
+      </p>
+    </div>
+
+  </div><!-- /info-grid -->
+
+  <!-- ── Footer & Vercount ────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="vercount-row">
+      <div class="vc-item">
+        👁️ 累計瀏覽：
+        <span class="vc-num" id="vercount_value_site_pv">--</span> 次
+      </div>
+      <div class="vc-item">
+        🧑 獨立訪客：
+        <span class="vc-num" id="vercount_value_site_uv">--</span> 人
+      </div>
+    </div>
+    <p class="footer-text">
+      開源於
+      <a href="https://github.com/toydogcat/sim-trust-evolution" target="_blank" rel="noopener">
+        GitHub
+      </a>
+      ・ 授權：MIT
+    </p>
+  </footer>
+
+</div><!-- /page-wrapper -->
+
+<!-- Scripts -->
+<script src="simulation.js"></script>
+<script src="visualizer.js"></script>
+<script>
+'use strict';
+
+/* ── Global state ─────────────────────────────────────────── */
+const sim      = new Simulation();
+let   renderer = null;
+let   chart    = null;
+let   inited   = false;
+let   simSpeed = 300;
+
+/* ── Init renderer & chart on DOM ready ───────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  renderer = new NetworkRenderer('network-canvas');
+  chart    = new TrustChart('trust-chart');
+
+  renderer.renderIdle();
+  syncPayoffDisplay();
+
+  // Watch temptation slider to update payoff matrix display
+  document.getElementById('sl-tempt').addEventListener('input', function() {
+    updateLabel('val-tempt', parseFloat(this.value).toFixed(1));
+    syncPayoffDisplay();
+  });
+
+  // Resize observer for canvas
+  const ro = new ResizeObserver(() => {
+    if (inited) renderer.render(sim.agents, sim.edges);
+    else        renderer.renderIdle();
+  });
+  ro.observe(document.getElementById('network-canvas'));
+});
+
+/* ── Helpers ──────────────────────────────────────────────── */
+function updateLabel(id, val) {
+  document.getElementById(id).textContent = val;
+}
+
+function syncPayoffDisplay() {
+  const T = parseFloat(document.getElementById('sl-tempt').value).toFixed(1);
+  document.getElementById('pm-st').textContent = `S,T = 0,${T}`;
+  document.getElementById('pm-ts').textContent = `T,S = ${T},0`;
+}
+
+function readParams() {
+  return {
+    numAgents:    parseInt(document.getElementById('sl-agents').value),
+    connectivity: parseInt(document.getElementById('sl-conn').value)   / 100,
+    initDist:     document.getElementById('sel-dist').value,
+    topology:     document.getElementById('sel-topology').value,
+    temptation:   parseFloat(document.getElementById('sl-tempt').value),
+    leniency:     parseFloat(document.getElementById('sl-leniency').value),
+    noise:        parseFloat(document.getElementById('sl-noise').value),
+  };
+}
+
+function updateStats() {
+  const s = sim.stats;
+  document.getElementById('stat-round').textContent  = sim.round;
+  document.getElementById('round-num').textContent    = sim.round;
+  document.getElementById('stat-trust').textContent   =
+    inited ? (s.avgTrust * 100).toFixed(1) + '%' : '—';
+  document.getElementById('stat-coop').textContent    =
+    inited ? (s.coopRate * 100).toFixed(1) + '%' : '—';
+  document.getElementById('stat-agents').textContent  =
+    inited ? sim.agents.length : '—';
+}
+
+function setRunningUI(running) {
+  const ind = document.getElementById('run-indicator');
+  const btn = document.getElementById('btn-start');
+  if (running) {
+    ind.classList.add('active');
+    btn.textContent = '⏸ 暫停';
+    btn.onclick = handlePause;
+  } else {
+    ind.classList.remove('active');
+    btn.textContent = '▶ 繼續';
+    btn.onclick = handleStart;
+  }
+}
+
+/* ── Button handlers ──────────────────────────────────────── */
+function handleInit() {
+  if (sim.running) { sim.pause(); setRunningUI(false); }
+
+  const params = readParams();
+  sim.init(params);
+  inited = true;
+
+  // Hook callbacks
+  sim.onRoundComplete = () => {
+    renderer.render(sim.agents, sim.edges);
+    chart.update(sim.roundHistory, sim.trustHistory, sim.coopHistory);
+    updateStats();
+  };
+
+  // First render
+  renderer.render(sim.agents, sim.edges);
+  chart.reset();
+  updateStats();
+
+  // Enable buttons
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-step').disabled  = false;
+}
+
+function handleStart() {
+  if (!inited) { handleInit(); }
+  sim.start(simSpeed);
+  setRunningUI(true);
+}
+
+function handlePause() {
+  sim.pause();
+  setRunningUI(false);
+}
+
+function handleStep() {
+  if (!inited) return;
+  if (sim.running) { sim.pause(); setRunningUI(false); }
+  sim.step();
+  renderer.render(sim.agents, sim.edges);
+  chart.update(sim.roundHistory, sim.trustHistory, sim.coopHistory);
+  updateStats();
+}
+
+function handleReset() {
+  if (sim.running) { sim.pause(); setRunningUI(false); }
+  inited = false;
+  sim.agents  = [];
+  sim.edges   = [];
+  sim.round   = 0;
+  sim.trustHistory = [];
+  sim.coopHistory  = [];
+  sim.roundHistory = [];
+  renderer.renderIdle();
+  chart.reset();
+  updateStats();
+
+  document.getElementById('stat-round').textContent  = '0';
+  document.getElementById('round-num').textContent   = '0';
+  document.getElementById('stat-trust').textContent  = '—';
+  document.getElementById('stat-coop').textContent   = '—';
+  document.getElementById('stat-agents').textContent = '—';
+
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-step').disabled  = true;
+  document.getElementById('run-indicator').classList.remove('active');
+  document.getElementById('btn-start').textContent = '▶ 開始';
+  document.getElementById('btn-start').onclick = handleStart;
+}
+
+function handleSpeedChange(val) {
+  simSpeed = 1050 - parseInt(val); // invert: higher slider = faster = smaller interval
+  document.getElementById('speed-label').textContent = simSpeed;
+  if (sim.running) {
+    sim.pause();
+    sim.start(simSpeed);
+  }
+}
+</script>
+
+</body>
+</html>

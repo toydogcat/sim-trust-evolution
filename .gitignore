@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 臨時開發目錄（不上傳至 Git）
+TMP/
+temp/
+
+# 大型多媒體與學術資產
+*.pdf
+*.mp4
+*.mp3
